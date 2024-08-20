@@ -1,59 +1,65 @@
 using System.Runtime.Serialization;
 using System.Xml;
 
-namespace SW2URDF.URDF
+namespace SW2URDF.URDF;
+
+//The base URDF element, a robot
+[DataContract(IsReference = true, Namespace = "http://schemas.datacontract.org/2004/07/SW2URDF")]
+public class Robot : URDFElement
 {
-    //The base URDF element, a robot
-    [DataContract(IsReference = true, Namespace = "http://schemas.datacontract.org/2004/07/SW2URDF")]
-    public class Robot : URDFElement
+    [DataMember]
+    public Link BaseLink { get; private set; }
+
+    [DataMember]
+    private readonly URDFAttribute NameAttribute;
+
+    public string Name
     {
-        [DataMember]
-        public Link BaseLink { get; private set; }
+        get => (string)NameAttribute.Value;
+        set => NameAttribute.Value = value;
+    }
 
-        [DataMember]
-        private readonly URDFAttribute NameAttribute;
+    public Robot()
+        : base("robot", true)
+    {
+        BaseLink = new Link(null);
+        NameAttribute = new URDFAttribute("name", true, "");
 
-        public string Name
-        {
-            get => (string)NameAttribute.Value;
-            set => NameAttribute.Value = value;
-        }
+        ChildElements.Add(BaseLink);
+        Attributes.Add(NameAttribute);
+    }
 
-        public Robot() : base("robot", true)
-        {
-            BaseLink = new Link(null);
-            NameAttribute = new URDFAttribute("name", true, "");
+    public override void WriteURDF(XmlWriter writer)
+    {
+        writer.WriteStartDocument();
+        string buildVersion = Versioning.Version.GetBuildVersion();
+        string commitVersion = Versioning.Version.GetCommitVersion();
 
-            ChildElements.Add(BaseLink);
-            Attributes.Add(NameAttribute);
-        }
+        writer.WriteComment(
+            " This URDF was automatically created by SolidWorks to URDF Exporter! "
+                + "Originally created by Stephen Brawner (brawner@gmail.com) \r\n"
+                + string.Format(
+                    "     Commit Version: {0}  Build Version: {1}\r\n",
+                    commitVersion,
+                    buildVersion
+                )
+                + "     For more information, please see http://wiki.ros.org/sw_urdf_exporter "
+        );
 
-        public override void WriteURDF(XmlWriter writer)
-        {
-            writer.WriteStartDocument();
-            string buildVersion = Versioning.Version.GetBuildVersion();
-            string commitVersion = Versioning.Version.GetCommitVersion();
+        base.WriteURDF(writer);
+        writer.WriteEndDocument();
+        writer.Close();
+    }
 
-            writer.WriteComment(" This URDF was automatically created by SolidWorks to URDF Exporter! " +
-                "Originally created by Stephen Brawner (brawner@gmail.com) \r\n" +
-                string.Format("     Commit Version: {0}  Build Version: {1}\r\n", commitVersion, buildVersion) +
-                "     For more information, please see http://wiki.ros.org/sw_urdf_exporter ");
+    public void SetBaseLink(Link link)
+    {
+        BaseLink = link;
+        ChildElements.Clear();
+        ChildElements.Add(link);
+    }
 
-            base.WriteURDF(writer);
-            writer.WriteEndDocument();
-            writer.Close();
-        }
-
-        public void SetBaseLink(Link link)
-        {
-            BaseLink = link;
-            ChildElements.Clear();
-            ChildElements.Add(link);
-        }
-
-        internal string[] GetJointNames(bool includeFixed)
-        {
-            return BaseLink.GetJointNames(includeFixed);
-        }
+    internal string[] GetJointNames(bool includeFixed)
+    {
+        return BaseLink.GetJointNames(includeFixed);
     }
 }

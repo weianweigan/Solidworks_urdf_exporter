@@ -20,9 +20,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+using System.Collections;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swconst;
-using System.Collections;
 
 namespace SW2URDF.SW
 {
@@ -119,7 +119,9 @@ namespace SW2URDF.SW
         public override bool AttachEventHandlers()
         {
             doc.DestroyNotify += new DPartDocEvents_DestroyNotifyEventHandler(OnDestroy);
-            doc.NewSelectionNotify += new DPartDocEvents_NewSelectionNotifyEventHandler(OnNewSelection);
+            doc.NewSelectionNotify += new DPartDocEvents_NewSelectionNotifyEventHandler(
+                OnNewSelection
+            );
 
             ConnectModelViews();
 
@@ -129,7 +131,9 @@ namespace SW2URDF.SW
         public override bool DetachEventHandlers()
         {
             doc.DestroyNotify -= new DPartDocEvents_DestroyNotifyEventHandler(OnDestroy);
-            doc.NewSelectionNotify -= new DPartDocEvents_NewSelectionNotifyEventHandler(OnNewSelection);
+            doc.NewSelectionNotify -= new DPartDocEvents_NewSelectionNotifyEventHandler(
+                OnNewSelection
+            );
 
             DisconnectModelViews();
 
@@ -165,11 +169,25 @@ namespace SW2URDF.SW
         public override bool AttachEventHandlers()
         {
             doc.DestroyNotify += new DAssemblyDocEvents_DestroyNotifyEventHandler(OnDestroy);
-            doc.NewSelectionNotify += new DAssemblyDocEvents_NewSelectionNotifyEventHandler(OnNewSelection);
-            doc.ComponentStateChangeNotify2 += new DAssemblyDocEvents_ComponentStateChangeNotify2EventHandler(ComponentStateChangeNotify2);
-            doc.ComponentStateChangeNotify += new DAssemblyDocEvents_ComponentStateChangeNotifyEventHandler(ComponentStateChangeNotify);
-            doc.ComponentVisualPropertiesChangeNotify += new DAssemblyDocEvents_ComponentVisualPropertiesChangeNotifyEventHandler(ComponentVisualPropertiesChangeNotify);
-            doc.ComponentDisplayStateChangeNotify += new DAssemblyDocEvents_ComponentDisplayStateChangeNotifyEventHandler(ComponentDisplayStateChangeNotify);
+            doc.NewSelectionNotify += new DAssemblyDocEvents_NewSelectionNotifyEventHandler(
+                OnNewSelection
+            );
+            doc.ComponentStateChangeNotify2 +=
+                new DAssemblyDocEvents_ComponentStateChangeNotify2EventHandler(
+                    ComponentStateChangeNotify2
+                );
+            doc.ComponentStateChangeNotify +=
+                new DAssemblyDocEvents_ComponentStateChangeNotifyEventHandler(
+                    ComponentStateChangeNotify
+                );
+            doc.ComponentVisualPropertiesChangeNotify +=
+                new DAssemblyDocEvents_ComponentVisualPropertiesChangeNotifyEventHandler(
+                    ComponentVisualPropertiesChangeNotify
+                );
+            doc.ComponentDisplayStateChangeNotify +=
+                new DAssemblyDocEvents_ComponentDisplayStateChangeNotifyEventHandler(
+                    ComponentDisplayStateChangeNotify
+                );
             ConnectModelViews();
 
             return true;
@@ -178,11 +196,25 @@ namespace SW2URDF.SW
         public override bool DetachEventHandlers()
         {
             doc.DestroyNotify -= new DAssemblyDocEvents_DestroyNotifyEventHandler(OnDestroy);
-            doc.NewSelectionNotify -= new DAssemblyDocEvents_NewSelectionNotifyEventHandler(OnNewSelection);
-            doc.ComponentStateChangeNotify2 -= new DAssemblyDocEvents_ComponentStateChangeNotify2EventHandler(ComponentStateChangeNotify2);
-            doc.ComponentStateChangeNotify -= new DAssemblyDocEvents_ComponentStateChangeNotifyEventHandler(ComponentStateChangeNotify);
-            doc.ComponentVisualPropertiesChangeNotify -= new DAssemblyDocEvents_ComponentVisualPropertiesChangeNotifyEventHandler(ComponentVisualPropertiesChangeNotify);
-            doc.ComponentDisplayStateChangeNotify -= new DAssemblyDocEvents_ComponentDisplayStateChangeNotifyEventHandler(ComponentDisplayStateChangeNotify);
+            doc.NewSelectionNotify -= new DAssemblyDocEvents_NewSelectionNotifyEventHandler(
+                OnNewSelection
+            );
+            doc.ComponentStateChangeNotify2 -=
+                new DAssemblyDocEvents_ComponentStateChangeNotify2EventHandler(
+                    ComponentStateChangeNotify2
+                );
+            doc.ComponentStateChangeNotify -=
+                new DAssemblyDocEvents_ComponentStateChangeNotifyEventHandler(
+                    ComponentStateChangeNotify
+                );
+            doc.ComponentVisualPropertiesChangeNotify -=
+                new DAssemblyDocEvents_ComponentVisualPropertiesChangeNotifyEventHandler(
+                    ComponentVisualPropertiesChangeNotify
+                );
+            doc.ComponentDisplayStateChangeNotify -=
+                new DAssemblyDocEvents_ComponentDisplayStateChangeNotifyEventHandler(
+                    ComponentDisplayStateChangeNotify
+                );
             DisconnectModelViews();
 
             userAddin.DetachModelEventHandler(document);
@@ -210,21 +242,21 @@ namespace SW2URDF.SW
             switch (newState)
             {
                 case swComponentSuppressionState_e.swComponentFullyResolved:
+                {
+                    if ((modDoc != null) && !swAddin.OpenDocs.Contains(modDoc))
                     {
-                        if ((modDoc != null) && !swAddin.OpenDocs.Contains(modDoc))
-                        {
-                            swAddin.AttachModelDocEventHandler(modDoc);
-                        }
-                        break;
+                        swAddin.AttachModelDocEventHandler(modDoc);
                     }
+                    break;
+                }
                 case swComponentSuppressionState_e.swComponentResolved:
+                {
+                    if ((modDoc != null) && !swAddin.OpenDocs.Contains(modDoc))
                     {
-                        if ((modDoc != null) && !swAddin.OpenDocs.Contains(modDoc))
-                        {
-                            swAddin.AttachModelDocEventHandler(modDoc);
-                        }
-                        break;
+                        swAddin.AttachModelDocEventHandler(modDoc);
                     }
+                    break;
+                }
                 case swComponentSuppressionState_e.swComponentSuppressed:
                     break;
                 case swComponentSuppressionState_e.swComponentLightweight:
@@ -241,16 +273,28 @@ namespace SW2URDF.SW
 
         protected int ComponentStateChange(object componentModel)
         {
-            ComponentStateChange(componentModel, (short)swComponentSuppressionState_e.swComponentResolved);
+            ComponentStateChange(
+                componentModel,
+                (short)swComponentSuppressionState_e.swComponentResolved
+            );
             return 0;
         }
 
-        public int ComponentStateChangeNotify2(object componentModel, string CompName, short oldCompState, short newCompState)
+        public int ComponentStateChangeNotify2(
+            object componentModel,
+            string CompName,
+            short oldCompState,
+            short newCompState
+        )
         {
             return ComponentStateChange(componentModel, newCompState);
         }
 
-        private int ComponentStateChangeNotify(object componentModel, short oldCompState, short newCompState)
+        private int ComponentStateChangeNotify(
+            object componentModel,
+            short oldCompState,
+            short newCompState
+        )
         {
             return ComponentStateChange(componentModel, newCompState);
         }
@@ -285,7 +329,9 @@ namespace SW2URDF.SW
         public override bool AttachEventHandlers()
         {
             doc.DestroyNotify += new DDrawingDocEvents_DestroyNotifyEventHandler(OnDestroy);
-            doc.NewSelectionNotify += new DDrawingDocEvents_NewSelectionNotifyEventHandler(OnNewSelection);
+            doc.NewSelectionNotify += new DDrawingDocEvents_NewSelectionNotifyEventHandler(
+                OnNewSelection
+            );
 
             ConnectModelViews();
 
@@ -295,7 +341,9 @@ namespace SW2URDF.SW
         public override bool DetachEventHandlers()
         {
             doc.DestroyNotify -= new DDrawingDocEvents_DestroyNotifyEventHandler(OnDestroy);
-            doc.NewSelectionNotify -= new DDrawingDocEvents_NewSelectionNotifyEventHandler(OnNewSelection);
+            doc.NewSelectionNotify -= new DDrawingDocEvents_NewSelectionNotifyEventHandler(
+                OnNewSelection
+            );
 
             DisconnectModelViews();
 

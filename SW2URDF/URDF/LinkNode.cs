@@ -1,78 +1,72 @@
-﻿using log4net;
+﻿using System.Windows.Forms;
+using log4net;
 using SW2URDF.Utilities;
-using System.Windows.Forms;
 
-namespace SW2URDF.URDF
+namespace SW2URDF.URDF;
+
+//A LinkNode is derived from a TreeView TreeNode. I've added many new fields to it so
+// that information can be passed around from the TreeView itself.
+public class LinkNode : TreeNode
 {
-    //A LinkNode is derived from a TreeView TreeNode. I've added many new fields to it so
-    // that information can be passed around from the TreeView itself.
-    public class LinkNode : TreeNode
+    private static readonly ILog logger = Logger.GetLogger();
+
+    public Link Link { get; set; }
+
+    public bool IsBaseNode { get; set; }
+
+    public bool IsIncomplete { get; set; }
+
+    public bool NeedsSaving { get; set; }
+
+    public string WhyIncomplete { get; set; }
+
+    public LinkNode()
     {
-        private static readonly ILog logger = Logger.GetLogger();
+        Link = new Link();
+    }
 
-        public Link Link
-        { get; set; }
+    public LinkNode(Link link)
+    {
+        logger.Info("Building node " + link.Name);
 
-        public bool IsBaseNode
-        { get; set; }
+        IsBaseNode = link.Parent == null;
+        IsIncomplete = true;
+        Link = link;
 
-        public bool IsIncomplete
-        { get; set; }
+        Name = Link.Name;
+        Text = Link.Name;
 
-        public bool NeedsSaving
-        { get; set; }
-
-        public string WhyIncomplete
-        { get; set; }
-
-        public LinkNode()
+        foreach (Link child in link.Children)
         {
-            Link = new Link();
+            Nodes.Add(new LinkNode(child));
         }
+    }
 
-        public LinkNode(Link link)
+    public Link UpdateLinkTree(Link parent)
+    {
+        Link.Children.Clear();
+        Link.Parent = parent;
+        foreach (LinkNode child in Nodes)
         {
-            logger.Info("Building node " + link.Name);
-
-            IsBaseNode = link.Parent == null;
-            IsIncomplete = true;
-            Link = link;
-
-            Name = Link.Name;
-            Text = Link.Name;
-
-            foreach (Link child in link.Children)
-            {
-                Nodes.Add(new LinkNode(child));
-            }
+            Link.Children.Add(child.UpdateLinkTree(Link));
         }
+        return Link;
+    }
 
-        public Link UpdateLinkTree(Link parent)
+    public override object Clone()
+    {
+        LinkNode cloned = (LinkNode)base.Clone();
+        cloned.Link = Link.Clone();
+        return cloned;
+    }
+
+    public Link RebuildLink()
+    {
+        Link.Children.Clear();
+        foreach (LinkNode child in Nodes)
         {
-            Link.Children.Clear();
-            Link.Parent = parent;
-            foreach (LinkNode child in Nodes)
-            {
-                Link.Children.Add(child.UpdateLinkTree(Link));
-            }
-            return Link;
+            Link.Children.Add(child.RebuildLink());
         }
-
-        public override object Clone()
-        {
-            LinkNode cloned = (LinkNode)base.Clone();
-            cloned.Link = Link.Clone();
-            return cloned;
-        }
-
-        public Link RebuildLink()
-        {
-            Link.Children.Clear();
-            foreach (LinkNode child in Nodes)
-            {
-                Link.Children.Add(child.RebuildLink());
-            }
-            return Link;
-        }
+        return Link;
     }
 }

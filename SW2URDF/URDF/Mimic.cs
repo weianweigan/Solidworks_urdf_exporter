@@ -1,85 +1,85 @@
 ﻿using System.Runtime.Serialization;
 using System.Windows.Forms;
 
-namespace SW2URDF.URDF
+namespace SW2URDF.URDF;
+
+[DataContract(Name = "Mimic", Namespace = "http://schemas.datacontract.org/2004/07/SW2URDF")]
+public class Mimic : URDFElement
 {
-    [DataContract(Name = "Mimic", Namespace = "http://schemas.datacontract.org/2004/07/SW2URDF")]
-    public class Mimic : URDFElement
+    [DataMember]
+    private readonly URDFAttribute JointNameAttribute;
+
+    public string JointName
     {
-        [DataMember]
-        private readonly URDFAttribute JointNameAttribute;
-
-        public string JointName
+        get => (string)JointNameAttribute.Value;
+        set
         {
-            get => (string)JointNameAttribute.Value;
-            set
+            if (value.GetType() == typeof(string))
             {
-                if (value.GetType() == typeof(string))
-                {
-                    JointNameAttribute.Value = value;
-                }
+                JointNameAttribute.Value = value;
             }
         }
+    }
 
-        [DataMember]
-        private readonly URDFAttribute MultiplierAttribute;
+    [DataMember]
+    private readonly URDFAttribute MultiplierAttribute;
 
-        public double Multiplier
+    public double Multiplier
+    {
+        get => (double)MultiplierAttribute.Value;
+        set
         {
-            get => (double)MultiplierAttribute.Value;
-            set
+            if (value.GetType() == typeof(double))
             {
-                if (value.GetType() == typeof(double))
-                {
-                    MultiplierAttribute.Value = value;
-                }
+                MultiplierAttribute.Value = value;
             }
         }
+    }
 
-        [DataMember]
-        private readonly URDFAttribute OffsetAttribute;
+    [DataMember]
+    private readonly URDFAttribute OffsetAttribute;
 
-        public double Offset
+    public double Offset
+    {
+        get => (double)OffsetAttribute.Value;
+        set
         {
-            get => (double)OffsetAttribute.Value;
-            set
+            if (value.GetType() == typeof(double))
             {
-                if (value.GetType() == typeof(double))
-                {
-                    OffsetAttribute.Value = value;
-                }
+                OffsetAttribute.Value = value;
             }
         }
+    }
 
-        public Mimic() : base("mimic", false)
-        {
-            JointNameAttribute = new URDFAttribute("joint", true, null);
-            MultiplierAttribute = new URDFAttribute("multiplier", false, null);
-            OffsetAttribute = new URDFAttribute("offset", false, null);
+    public Mimic()
+        : base("mimic", false)
+    {
+        JointNameAttribute = new URDFAttribute("joint", true, null);
+        MultiplierAttribute = new URDFAttribute("multiplier", false, null);
+        OffsetAttribute = new URDFAttribute("offset", false, null);
 
-            Attributes.Add(JointNameAttribute);
-            Attributes.Add(MultiplierAttribute);
-            Attributes.Add(OffsetAttribute);
-        }
+        Attributes.Add(JointNameAttribute);
+        Attributes.Add(MultiplierAttribute);
+        Attributes.Add(OffsetAttribute);
+    }
 
-        /// <summary>
-        ///
-        /// This Joint Position = multiplier * (other joint position) + offset
-        /// </summary>
-        /// <param name="mimicJointName"></param>
-        /// <param name="multiplierText"></param>
-        /// <param name="offsetText"></param>
-        public void Update(string mimicJointName, string multiplierText, string offsetText)
-        {
-            JointName = mimicJointName;
-            MultiplierAttribute.SetDoubleValueFromString(multiplierText);
-            OffsetAttribute.SetDoubleValueFromString(offsetText);
-        }
+    /// <summary>
+    ///
+    /// This Joint Position = multiplier * (other joint position) + offset
+    /// </summary>
+    /// <param name="mimicJointName"></param>
+    /// <param name="multiplierText"></param>
+    /// <param name="offsetText"></param>
+    public void Update(string mimicJointName, string multiplierText, string offsetText)
+    {
+        JointName = mimicJointName;
+        MultiplierAttribute.SetDoubleValueFromString(multiplierText);
+        OffsetAttribute.SetDoubleValueFromString(offsetText);
+    }
 
-        internal void FillBoxes(TextBox textBoxMimicMultiplier, TextBox textBoxMimicOffset)
-        {
-            textBoxMimicMultiplier.Text = MultiplierAttribute.GetTextFromDoubleValue();
-            textBoxMimicOffset.Text = OffsetAttribute.GetTextFromDoubleValue();
-        }
+    internal void FillBoxes(TextBox textBoxMimicMultiplier, TextBox textBoxMimicOffset)
+    {
+        textBoxMimicMultiplier.Text = MultiplierAttribute.GetTextFromDoubleValue();
+        textBoxMimicOffset.Text = OffsetAttribute.GetTextFromDoubleValue();
     }
 }

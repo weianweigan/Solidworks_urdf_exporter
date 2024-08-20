@@ -290,7 +290,7 @@ namespace SW2URDF.SW
 
         public void SetupAssemblyExporter()
         {
-            ModelDoc2 modeldoc = SwApp.ActiveDoc;
+            ModelDoc2 modeldoc = (ModelDoc2)SwApp.ActiveDoc;
             logger.Info("Assembly export called for file " + modeldoc.GetTitle());
             bool saveAndRebuild = false;
             if (modeldoc.GetSaveFlag())
@@ -349,7 +349,7 @@ namespace SW2URDF.SW
         public void SetupPartExporter()
         {
             logger.Info("Part export called");
-            ModelDoc2 modeldoc = SwApp.ActiveDoc;
+            ModelDoc2 modeldoc = (ModelDoc2)SwApp.ActiveDoc;
             if ((modeldoc.Extension.NeedsRebuild2 == 0) ||
                 MessageBox.Show("Save and rebuild document?",
                 "The SW to URDF exporter requires saving before continuing",

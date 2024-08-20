@@ -1,10 +1,9 @@
 ﻿using System.Windows;
 
-namespace SW2URDF.UI
+namespace SW2URDF.UI;
+
+public interface IMessageBox
 {
-    public interface IMessageBox
-    {
-        MessageBoxResult Show(string message);
-        MessageBoxResult Show(string message, string caption, MessageBoxButton buttons);
-    }
+    MessageBoxResult Show(string message);
+    MessageBoxResult Show(string message, string caption, MessageBoxButton buttons);
 }

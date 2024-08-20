@@ -13,12 +13,4 @@ When you build the solution, you should see two successful builds, SW2URDF and T
 
 ## To Run
 
-Run the TestRunner executable, it will locate the SW2URDF Dll automatically.
-
-    TestRunner\bin\Debug\net452>TestRunner.exe
-
-If you only want to run a subset of tests, the first argument of TestRunner.exe is an optional filter parameter.
-Any test with a fully qualified NameSpace.ClassName.FunctionName that contains the provided string will be run.
-For example, to run just the versioning tests.
-
-    TestRunner\bin\Debug\net452>TestRunner.exe TestVersioning
+You can run tests directly from the Test Explorer in Visual Studio.

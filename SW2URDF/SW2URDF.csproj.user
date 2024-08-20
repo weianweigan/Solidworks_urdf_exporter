@@ -41,4 +41,15 @@
     <EnableUnmanagedDebugging>true</EnableUnmanagedDebugging>
     <StartAction>Program</StartAction>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Update="UI\AssemblyExportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\AssemblyExportFormExtension.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="UI\PartExportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
 </Project>

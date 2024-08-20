@@ -1,9 +1,8 @@
 ﻿using System;
 
-namespace SW2URDF.UI
+namespace SW2URDF.UI;
+
+public class TreeModifiedEventArgs : EventArgs
 {
-    public class TreeModifiedEventArgs : EventArgs
-    {
-        public URDFTreeView Tree;
-    }
+    public URDFTreeView Tree;
 }

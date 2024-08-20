@@ -1,5 +1,3 @@
-using log4net;
-using SW2URDF.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -7,208 +5,227 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Xml;
+using log4net;
+using SW2URDF.Utilities;
 
-namespace SW2URDF.URDF
+namespace SW2URDF.URDF;
+
+// Base class of each URDFElement. The goal is to minimize the amount of code in the derived classes;s
+[DataContract(IsReference = true, Namespace = "http://schemas.datacontract.org/2004/07/SW2URDF")]
+[KnownType("GetKnownTypes")]
+public class URDFElement : IExtensibleDataObject
 {
-    // Base class of each URDFElement. The goal is to minimize the amount of code in the derived classes;s
-    [DataContract(IsReference = true, Namespace = "http://schemas.datacontract.org/2004/07/SW2URDF")]
-    [KnownType("GetKnownTypes")]
-    public class URDFElement : IExtensibleDataObject
+    protected static readonly ILog logger = Logger.GetLogger();
+
+    [DataMember]
+    protected readonly List<URDFElement> ChildElements;
+
+    [DataMember]
+    protected readonly List<URDFAttribute> Attributes;
+
+    [DataMember]
+    protected readonly string ElementName;
+
+    [DataMember]
+    protected bool required;
+
+    private ExtensionDataObject ExtensionDataValue;
+
+    public virtual ExtensionDataObject ExtensionData
     {
-        protected static readonly ILog logger = Logger.GetLogger();
+        get => ExtensionDataValue;
+        set => ExtensionDataValue = value;
+    }
 
-        [DataMember]
-        protected readonly List<URDFElement> ChildElements;
+    public URDFElement(string elementName, bool required)
+    {
+        ElementName = elementName;
+        this.required = required;
+        ChildElements = new List<URDFElement>();
+        Attributes = new List<URDFAttribute>();
+    }
 
-        [DataMember]
-        protected readonly List<URDFAttribute> Attributes;
+    public bool IsRequired()
+    {
+        return required;
+    }
 
-        [DataMember]
-        protected readonly string ElementName;
+    public virtual void SetRequired(bool required)
+    {
+        this.required = required;
+    }
 
-        [DataMember]
-        protected bool required;
-
-        private ExtensionDataObject ExtensionDataValue;
-
-        public virtual ExtensionDataObject ExtensionData
+    public virtual void WriteURDF(XmlWriter writer)
+    {
+        if (!AreRequiredFieldsSatisfied())
         {
-            get => ExtensionDataValue;
-            set => ExtensionDataValue = value;
+            throw new Exception(
+                "The required fields of the element " + ElementName + " have not been satisfied"
+            );
         }
 
-        public URDFElement(string elementName, bool required)
+        if (!ElementContainsData())
         {
-            ElementName = elementName;
-            this.required = required;
-            ChildElements = new List<URDFElement>();
-            Attributes = new List<URDFAttribute>();
+            return;
         }
 
-        public bool IsRequired()
+        writer.WriteStartElement(ElementName);
+        foreach (URDFAttribute attribute in Attributes)
         {
-            return required;
-        }
-
-        public virtual void SetRequired(bool required)
-        {
-            this.required = required;
-        }
-
-        public virtual void WriteURDF(XmlWriter writer)
-        {
-            if (!AreRequiredFieldsSatisfied())
+            if (attribute.Value != null)
             {
-                throw new Exception("The required fields of the element " + ElementName + " have not been satisfied");
-            }
-
-            if (!ElementContainsData())
-            {
-                return;
-            }
-
-            writer.WriteStartElement(ElementName);
-            foreach (URDFAttribute attribute in Attributes)
-            {
-                if (attribute.Value != null)
-                {
-                    attribute.WriteURDF(writer);
-                }
-            }
-
-            foreach (URDFElement child in ChildElements)
-            {
-                if (child.ElementContainsData())
-                {
-                    child.WriteURDF(writer);
-                }
-            }
-
-            writer.WriteEndElement();
-        }
-
-        public virtual void AppendToCSVDictionary(List<string> context, OrderedDictionary dictionary)
-        {
-            string typeName = GetType().Name;
-            List<string> updatedContext = new List<string>(context) { typeName };
-
-            foreach (URDFAttribute att in Attributes)
-            {
-                if (att.Value != null)
-                {
-                    att.AppendToCSVDictionary(updatedContext, dictionary);
-                }
-            }
-
-            foreach (URDFElement child in ChildElements)
-            {
-                child.AppendToCSVDictionary(updatedContext, dictionary);
+                attribute.WriteURDF(writer);
             }
         }
 
-        public virtual void SetElementFromData(List<string> context, StringDictionary dictionary)
+        foreach (URDFElement child in ChildElements)
         {
-            string typeName = GetType().Name;
-            List<string> updatedContext = new List<string>(context) { typeName };
-
-            foreach (URDFAttribute att in Attributes)
+            if (child.ElementContainsData())
             {
-                att.SetValueFromData(updatedContext, dictionary);
-            }
-
-            foreach (URDFElement child in ChildElements)
-            {
-                child.SetElementFromData(updatedContext, dictionary);
+                child.WriteURDF(writer);
             }
         }
 
-        public void Unset()
+        writer.WriteEndElement();
+    }
+
+    public virtual void AppendToCSVDictionary(List<string> context, OrderedDictionary dictionary)
+    {
+        string typeName = GetType().Name;
+        List<string> updatedContext = new List<string>(context) { typeName };
+
+        foreach (URDFAttribute att in Attributes)
         {
-            foreach (URDFAttribute attribute in Attributes)
+            if (att.Value != null)
             {
-                attribute.Value = null;
-            }
-            foreach (URDFElement child in ChildElements)
-            {
-                child.Unset();
+                att.AppendToCSVDictionary(updatedContext, dictionary);
             }
         }
 
-        public virtual bool AreRequiredFieldsSatisfied()
+        foreach (URDFElement child in ChildElements)
         {
-            foreach (URDFAttribute attribute in Attributes)
-            {
-                if (attribute.GetIsRequired() && attribute.Value == null)
-                {
-                    return false;
-                }
-            }
-            foreach (URDFElement child in ChildElements)
-            {
-                if (!child.AreRequiredFieldsSatisfied() &&
-                    (child.IsRequired() || child.ElementContainsData()))
-                {
-                    return false;
-                }
-            }
-            return true;
+            child.AppendToCSVDictionary(updatedContext, dictionary);
+        }
+    }
+
+    public virtual void SetElementFromData(List<string> context, StringDictionary dictionary)
+    {
+        string typeName = GetType().Name;
+        List<string> updatedContext = new List<string>(context) { typeName };
+
+        foreach (URDFAttribute att in Attributes)
+        {
+            att.SetValueFromData(updatedContext, dictionary);
         }
 
-        public virtual bool ElementContainsData()
+        foreach (URDFElement child in ChildElements)
         {
-            foreach (URDFAttribute attribute in Attributes)
-            {
-                if (attribute.Value != null)
-                {
-                    return true;
-                }
-            }
+            child.SetElementFromData(updatedContext, dictionary);
+        }
+    }
 
-            foreach (URDFElement child in ChildElements)
+    public void Unset()
+    {
+        foreach (URDFAttribute attribute in Attributes)
+        {
+            attribute.Value = null;
+        }
+        foreach (URDFElement child in ChildElements)
+        {
+            child.Unset();
+        }
+    }
+
+    public virtual bool AreRequiredFieldsSatisfied()
+    {
+        foreach (URDFAttribute attribute in Attributes)
+        {
+            if (attribute.GetIsRequired() && attribute.Value == null)
             {
-                if (child.ElementContainsData())
-                {
-                    return true;
-                }
+                return false;
             }
-            return false;
+        }
+        foreach (URDFElement child in ChildElements)
+        {
+            if (
+                !child.AreRequiredFieldsSatisfied()
+                && (child.IsRequired() || child.ElementContainsData())
+            )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public virtual bool ElementContainsData()
+    {
+        foreach (URDFAttribute attribute in Attributes)
+        {
+            if (attribute.Value != null)
+            {
+                return true;
+            }
         }
 
-        public static Type[] GetKnownTypes()
+        foreach (URDFElement child in ChildElements)
         {
-            return new List<Type>(
-                Assembly.GetExecutingAssembly().GetTypes().Where(_ => _.IsSubclassOf(typeof(URDFElement))))
+            if (child.ElementContainsData())
             {
-                typeof(double[])
-            }.ToArray();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static Type[] GetKnownTypes()
+    {
+        return new List<Type>(
+            Assembly
+                .GetExecutingAssembly()
+                .GetTypes()
+                .Where(_ => _.IsSubclassOf(typeof(URDFElement)))
+        )
+        {
+            typeof(double[])
+        }.ToArray();
+    }
+
+    public virtual void SetElement(URDFElement externalElement)
+    {
+        if (externalElement.GetType() != GetType())
+        {
+            throw new Exception("URDFElements need to be the same type to set the internal values");
         }
 
-        public virtual void SetElement(URDFElement externalElement)
+        foreach (
+            Tuple<URDFAttribute, URDFAttribute> pair in Enumerable.Zip(
+                Attributes,
+                externalElement.Attributes,
+                Tuple.Create
+            )
+        )
         {
-            if (externalElement.GetType() != GetType())
+            if (pair.Item2.Value != null && pair.Item2.Value.GetType() == typeof(double[]))
             {
-                throw new Exception("URDFElements need to be the same type to set the internal values");
+                double[] valueArray = (double[])pair.Item2.Value;
+                pair.Item1.Value = valueArray.Clone();
             }
+            else
+            {
+                pair.Item1.Value = pair.Item2.Value;
+            }
+        }
 
-            foreach (Tuple<URDFAttribute, URDFAttribute> pair in
-                Enumerable.Zip(Attributes, externalElement.Attributes, Tuple.Create))
-            {
-                if (pair.Item2.Value != null && pair.Item2.Value.GetType() == typeof(double[]))
-                {
-                    double[] valueArray = (double[])pair.Item2.Value;
-                    pair.Item1.Value = valueArray.Clone();
-                }
-                else
-                {
-                    pair.Item1.Value = pair.Item2.Value;
-                }
-            }
-
-            foreach (Tuple<URDFElement, URDFElement> pair in
-                Enumerable.Zip(ChildElements, externalElement.ChildElements, Tuple.Create))
-            {
-                pair.Item1.SetElement(pair.Item2);
-            }
+        foreach (
+            Tuple<URDFElement, URDFElement> pair in Enumerable.Zip(
+                ChildElements,
+                externalElement.ChildElements,
+                Tuple.Create
+            )
+        )
+        {
+            pair.Item1.SetElement(pair.Item2);
         }
     }
 }

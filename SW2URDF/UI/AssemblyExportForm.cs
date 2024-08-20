@@ -59,7 +59,7 @@ namespace SW2URDF.UI
             InitializeComponent();
             swApp = SwApp;
             BaseNode = node;
-            ActiveSWModel = swApp.ActiveDoc;
+            ActiveSWModel = (ModelDoc2)swApp.ActiveDoc;
             Exporter = exporter;
             AutoUpdatingForm = false;
 
@@ -107,7 +107,7 @@ namespace SW2URDF.UI
                 textBox.KeyPress += NumericalTextBoxKeyPress;
             }
 
-            saveConfigurationAttributeDef = SwApp.DefineAttribute(ConfigurationSerialization.UrdfConfigurationSwAttributeName);
+            saveConfigurationAttributeDef = (AttributeDef)SwApp.DefineAttribute(ConfigurationSerialization.UrdfConfigurationSwAttributeName);
             int Options = 0;
 
             saveConfigurationAttributeDef.AddParameter(
@@ -345,7 +345,7 @@ namespace SW2URDF.UI
             node.NodeFont = fontBold;
             node.Text = node.Text;
             ActiveSWModel.ClearSelection2(true);
-            SelectionMgr manager = ActiveSWModel.SelectionManager;
+            SelectionMgr manager = ActiveSWModel.ISelectionManager;
 
             SelectData data = manager.CreateSelectData();
             data.Mark = -1;
@@ -418,7 +418,7 @@ namespace SW2URDF.UI
             }
             LinkNode node = (LinkNode)e.Node;
             ActiveSWModel.ClearSelection2(true);
-            SelectionMgr manager = ActiveSWModel.SelectionManager;
+            SelectionMgr manager = ActiveSWModel.ISelectionManager;
 
             SelectData data = manager.CreateSelectData();
             data.Mark = -1;
