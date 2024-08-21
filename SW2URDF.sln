@@ -10,7 +10,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{25EA017B-A870-495B-B51E-8013E9E3FDFA}"
 	ProjectSection(SolutionItems) = preProject
 		Directory.Build.props = Directory.Build.props
+		Version.props = Version.props
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Installer", "Installer\Installer.csproj", "{336A334D-6840-4858-A2BB-0CFE25CAD773}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,6 +29,10 @@ Global
 		{4BCA2D3C-ED8B-40F2-9B9E-CB02F64498FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4BCA2D3C-ED8B-40F2-9B9E-CB02F64498FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4BCA2D3C-ED8B-40F2-9B9E-CB02F64498FB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{336A334D-6840-4858-A2BB-0CFE25CAD773}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{336A334D-6840-4858-A2BB-0CFE25CAD773}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{336A334D-6840-4858-A2BB-0CFE25CAD773}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{336A334D-6840-4858-A2BB-0CFE25CAD773}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

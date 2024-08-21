@@ -331,4 +331,6 @@ ASALocalRun/
 # Ignore installer zip files
 *.zip
 
-SW2URDF/Versioning/VersionInfo.cs
+# WixSharp
+output/
+wix/
