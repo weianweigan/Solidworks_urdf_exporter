@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using Microsoft.Deployment.WindowsInstaller;
 using WixSharp;
+using WixSharp.CommonTasks;
+using WixSharp.Controls;
 
 namespace Installer;
 
@@ -59,11 +61,12 @@ internal class Program
             {
                 Manufacturer = Manufacturer,
                 HelpLink = HelpLink,
-                Comments = "DMS",
+                Comments = ProductName,
                 ProductIcon = @"Resources\Icons\ShellIcon.ico"
             },
             ValidateBackgroundImage = false,
         };
+        project.RemoveDialogsBetween(NativeDialogs.WelcomeDlg, NativeDialogs.InstallDirDlg);
 
         project.BuildMsi();
     }
@@ -92,7 +95,7 @@ internal class Program
     {
         return
         [
-            (new Files($@"{binaryDir}\*.*")),
+            new Files($@"{binaryDir}\*.*"),
             new Dir(
                 $@"%ProgramMenu%\{CompanyName}\{ProductName}",
                 new ExeFileShortcut(
@@ -112,8 +115,9 @@ public class CustomActions
     {
         return session.HandleErrors(() =>
         {
-            string batFile = Path.Combine(session.Property("INSTALLDIR"), "Register.bat");
-            Process.Start(batFile);
+            string batFile = Path.Combine(session.Property("INSTALLDIR"), "Install.bat");
+            var p = Process.Start(batFile);
+            p.WaitForExit();
         });
     }
 
@@ -122,8 +126,9 @@ public class CustomActions
     {
         return session.HandleErrors(() =>
         {
-            string batFile = Path.Combine(session.Property("INSTALLDIR"), "UnRegister.bat");
-            Process.Start(batFile);
+            string batFile = Path.Combine(session.Property("INSTALLDIR"), "UnInstall.bat");
+            var p = Process.Start(batFile);
+            p.WaitForExit();
         });
     }
 }
