@@ -20,6 +20,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
+using System;
+using System.Collections;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Windows.Forms;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swconst;
 using SolidWorks.Interop.swpublished;
@@ -27,567 +32,616 @@ using SolidWorksTools;
 using SW2URDF.UI;
 using SW2URDF.URDFExport;
 using SW2URDF.Utilities;
-using System;
-using System.Collections;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Windows.Forms;
 
-namespace SW2URDF.SW
+namespace SW2URDF.SW;
+
+// Adding a new line
+//
+/// <summary>
+/// Summary description for SW2URDF.
+/// </summary>
+[Guid("65c9fc17-6a74-45a3-8f84-55185900275d"), ComVisible(true)]
+[SwAddin(Description = "SolidWorks to URDF exporter", Title = "SW2URDF", LoadAtStartup = true)]
+public class SwAddin : ISwAddin
 {
-    // Adding a new line
-    //
-    /// <summary>
-    /// Summary description for SW2URDF.
-    /// </summary>
-    [Guid("65c9fc17-6a74-45a3-8f84-55185900275d"), ComVisible(true)]
-    [SwAddin(
-        Description = "SolidWorks to URDF exporter",
-        Title = "SW2URDF",
-        LoadAtStartup = true
-        )]
-    public class SwAddin : ISwAddin
+    #region Static Variables
+
+    private static readonly log4net.ILog logger = Logger.GetLogger();
+
+    #endregion Static Variables
+
+    #region Local Variables
+
+    private int add_in_id_ = 0;
+
+    public const int mainCmdGroupID = 5;
+    public const int mainItemID1 = 0;
+    public const int mainItemID2 = 1;
+    public const int mainItemID3 = 2;
+    public const int flyoutGroupID = 91;
+
+    #region Event Handler Variables
+
+    private SldWorks SwEventPtr = null;
+
+    #endregion Event Handler Variables
+
+    // Public Properties
+    public ISldWorks SwApp { get; private set; } = null;
+
+    public ICommandManager CmdMgr { get; private set; } = null;
+
+    public Hashtable OpenDocs { get; private set; } = new Hashtable();
+
+    #endregion Local Variables
+
+    #region SolidWorks Registration
+
+    [ComRegisterFunction]
+    public static void RegisterFunction(Type t)
     {
-        #region Static Variables
+        #region Get Custom Attribute: SwAddinAttribute
 
-        private static readonly log4net.ILog logger = Logger.GetLogger();
+        SwAddinAttribute SWattr = null;
+        Type type = typeof(SwAddin);
 
-        #endregion Static Variables
-
-        #region Local Variables
-
-        private int add_in_id_ = 0;
-
-        public const int mainCmdGroupID = 5;
-        public const int mainItemID1 = 0;
-        public const int mainItemID2 = 1;
-        public const int mainItemID3 = 2;
-        public const int flyoutGroupID = 91;
-
-        #region Event Handler Variables
-
-        private SldWorks SwEventPtr = null;
-
-        #endregion Event Handler Variables
-
-        // Public Properties
-        public ISldWorks SwApp { get; private set; } = null;
-
-        public ICommandManager CmdMgr { get; private set; } = null;
-
-        public Hashtable OpenDocs { get; private set; } = new Hashtable();
-
-        #endregion Local Variables
-
-        #region SolidWorks Registration
-
-        [ComRegisterFunction]
-        public static void RegisterFunction(Type t)
+        foreach (System.Attribute attr in type.GetCustomAttributes(false))
         {
-            #region Get Custom Attribute: SwAddinAttribute
-
-            SwAddinAttribute SWattr = null;
-            Type type = typeof(SwAddin);
-
-            foreach (System.Attribute attr in type.GetCustomAttributes(false))
+            if (attr is SwAddinAttribute)
             {
-                if (attr is SwAddinAttribute)
-                {
-                    SWattr = attr as SwAddinAttribute;
-                    break;
-                }
-            }
-
-            #endregion Get Custom Attribute: SwAddinAttribute
-
-            try
-            {
-                Microsoft.Win32.RegistryKey hklm = Microsoft.Win32.Registry.LocalMachine;
-                Microsoft.Win32.RegistryKey hkcu = Microsoft.Win32.Registry.CurrentUser;
-
-                string keyname = "SOFTWARE\\SolidWorks\\Addins\\{" + t.GUID.ToString() + "}";
-                logger.Info("Registering " + keyname);
-                Microsoft.Win32.RegistryKey addinkey = hklm.CreateSubKey(keyname);
-                addinkey.SetValue(null, 0);
-
-                addinkey.SetValue("Description", SWattr.Description);
-                addinkey.SetValue("Title", SWattr.Title);
-
-                keyname = "Software\\SolidWorks\\AddInsStartup\\{" + t.GUID.ToString() + "}";
-                logger.Info("Registering " + keyname);
-                addinkey = hkcu.CreateSubKey(keyname);
-                addinkey.SetValue(
-                    null, Convert.ToInt32(SWattr.LoadAtStartup), Microsoft.Win32.RegistryValueKind.DWord);
-            }
-            catch (NullReferenceException nl)
-            {
-                logger.Error("There was a problem registering this dll: SWattr is null. \n\"" +
-                    nl.Message + "\"", nl);
-                // MessageBox.Show("There was a problem registering this dll: SWattr is null. \n\"" +
-                //     nl.Message + "\"\nEmail your maintainer with the log file found at " + Logger.GetFileName());
-            }
-            catch (Exception e)
-            {
-                logger.Error(e.Message);
-                // MessageBox.Show("There was a problem registering the function: \n\"" + e.Message +
-                //    "\"\nEmail your maintainer with the log file found at " + Logger.GetFileName());
+                SWattr = attr as SwAddinAttribute;
+                break;
             }
         }
 
-        [ComUnregisterFunction]
-        public static void UnregisterFunction(Type t)
+        #endregion Get Custom Attribute: SwAddinAttribute
+
+        try
         {
-            try
-            {
-                Microsoft.Win32.RegistryKey hklm = Microsoft.Win32.Registry.LocalMachine;
-                Microsoft.Win32.RegistryKey hkcu = Microsoft.Win32.Registry.CurrentUser;
+            Microsoft.Win32.RegistryKey hklm = Microsoft.Win32.Registry.LocalMachine;
+            Microsoft.Win32.RegistryKey hkcu = Microsoft.Win32.Registry.CurrentUser;
 
-                string keyname = "SOFTWARE\\SolidWorks\\Addins\\{" + t.GUID.ToString() + "}";
-                logger.Info("Unregistering " + keyname);
-                hklm.DeleteSubKey(keyname);
+            string keyname = "SOFTWARE\\SolidWorks\\Addins\\{" + t.GUID.ToString() + "}";
+            logger.Info("Registering " + keyname);
+            Microsoft.Win32.RegistryKey addinkey = hklm.CreateSubKey(keyname);
+            addinkey.SetValue(null, 0);
 
-                keyname = "Software\\SolidWorks\\AddInsStartup\\{" + t.GUID.ToString() + "}";
-                logger.Info("Unregistering " + keyname);
-                hkcu.DeleteSubKey(keyname);
-            }
-            catch (NullReferenceException nl)
-            {
-                logger.Error("There was a problem unregistering this dll: " + nl.Message);
-                MessageBox.Show("There was a problem unregistering this dll: \n\"" +
-                    nl.Message + "\"\nEmail your maintainer with the log file found at " +
-                    Logger.GetFileName());
-            }
-            catch (Exception e)
-            {
-                logger.Error("There was a problem unregistering this dll: " + e.Message);
-                MessageBox.Show("There was a problem unregistering this dll: \n\"" +
-                    e.Message + "\"\nEmail your maintainer with the log file found at " +
-                    Logger.GetFileName());
-            }
+            addinkey.SetValue("Description", SWattr.Description);
+            addinkey.SetValue("Title", SWattr.Title);
+
+            keyname = "Software\\SolidWorks\\AddInsStartup\\{" + t.GUID.ToString() + "}";
+            logger.Info("Registering " + keyname);
+            addinkey = hkcu.CreateSubKey(keyname);
+            addinkey.SetValue(
+                null,
+                Convert.ToInt32(SWattr.LoadAtStartup),
+                Microsoft.Win32.RegistryValueKind.DWord
+            );
+        }
+        catch (NullReferenceException nl)
+        {
+            logger.Error(
+                "There was a problem registering this dll: SWattr is null. \n\""
+                    + nl.Message
+                    + "\"",
+                nl
+            );
+            // MessageBox.Show("There was a problem registering this dll: SWattr is null. \n\"" +
+            //     nl.Message + "\"\nEmail your maintainer with the log file found at " + Logger.GetFileName());
+        }
+        catch (Exception e)
+        {
+            logger.Error(e.Message);
+            // MessageBox.Show("There was a problem registering the function: \n\"" + e.Message +
+            //    "\"\nEmail your maintainer with the log file found at " + Logger.GetFileName());
+        }
+    }
+
+    [ComUnregisterFunction]
+    public static void UnregisterFunction(Type t)
+    {
+        try
+        {
+            Microsoft.Win32.RegistryKey hklm = Microsoft.Win32.Registry.LocalMachine;
+            Microsoft.Win32.RegistryKey hkcu = Microsoft.Win32.Registry.CurrentUser;
+
+            string keyname = "SOFTWARE\\SolidWorks\\Addins\\{" + t.GUID.ToString() + "}";
+            logger.Info("Unregistering " + keyname);
+            hklm.DeleteSubKey(keyname);
+
+            keyname = "Software\\SolidWorks\\AddInsStartup\\{" + t.GUID.ToString() + "}";
+            logger.Info("Unregistering " + keyname);
+            hkcu.DeleteSubKey(keyname);
+        }
+        catch (NullReferenceException nl)
+        {
+            logger.Error("There was a problem unregistering this dll: " + nl.Message);
+            MessageBox.Show(
+                "There was a problem unregistering this dll: \n\""
+                    + nl.Message
+                    + "\"\nEmail your maintainer with the log file found at "
+                    + Logger.GetFileName()
+            );
+        }
+        catch (Exception e)
+        {
+            logger.Error("There was a problem unregistering this dll: " + e.Message);
+            MessageBox.Show(
+                "There was a problem unregistering this dll: \n\""
+                    + e.Message
+                    + "\"\nEmail your maintainer with the log file found at "
+                    + Logger.GetFileName()
+            );
+        }
+    }
+
+    #endregion SolidWorks Registration
+
+    #region ISwAddin Implementation
+
+    public SwAddin()
+    {
+        Logger.Setup();
+    }
+
+    private void ExceptionHandler(object sender, ThreadExceptionEventArgs e)
+    {
+        logger.Warn("Exception encountered in Assembly export form", e.Exception);
+    }
+
+    private void UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        logger.Error(
+            "Unhandled exception in Assembly Export form\nEmail your maintainer "
+                + "with the log file found at "
+                + Logger.GetFileName(),
+            (Exception)e.ExceptionObject
+        );
+    }
+
+    public bool ConnectToSW(object ThisSW, int cookie)
+    {
+        logger.Info("Attempting to connect to SW");
+        SwApp = (ISldWorks)ThisSW;
+        add_in_id_ = cookie;
+
+        //Setup callbacks
+        logger.Info("Setting up callbacks");
+        SwApp.SetAddinCallbackInfo(0, this, add_in_id_);
+
+        #region Setup the Command Manager
+        logger.Info("Setting up command manager");
+        CmdMgr = SwApp.GetCommandManager(cookie);
+
+        logger.Info("Adding command manager");
+        AddCommandMgr();
+
+        #endregion Setup the Command Manager
+
+        #region Setup the Event Handlers
+        logger.Info("Adding event handlers");
+        SwEventPtr = (SldWorks)SwApp;
+        OpenDocs = new Hashtable();
+        AttachEventHandlers();
+
+        #endregion Setup the Event Handlers
+
+        logger.Info("Connecting plugin to SolidWorks");
+        return true;
+    }
+
+    public bool DisconnectFromSW()
+    {
+        RemoveCommandMgr();
+        DetachEventHandlers();
+
+        Marshal.ReleaseComObject(CmdMgr);
+        CmdMgr = null;
+        Marshal.ReleaseComObject(SwApp);
+        SwApp = null;
+        //The addin _must_ call GC.Collect() here in order to retrieve all managed code pointers
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+
+        logger.Info("Disconnecting plugin from SolidWorks");
+        return true;
+    }
+
+    #endregion ISwAddin Implementation
+
+    #region UI Methods
+
+    public void AddCommandMgr()
+    {
+        // Do not use AddMenuItem5 here despite the obselete warning, AddMenuItem5 doesn't work
+        string[] images =
+        {
+            "C:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\URDFExporter\\images\\ros_logo_20x20.png",
+            "C:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\URDFExporter\\images\\ros_logo_32x32.png",
+            "C:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\URDFExporter\\images\\ros_logo_40x40.png",
+            "C:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\URDFExporter\\images\\ros_logo_64x64.png",
+            "C:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\URDFExporter\\images\\ros_logo_96x96.png",
+            "C:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\URDFExporter\\images\\ros_logo_128x128.png",
+        };
+        int ret = SwApp.AddMenuItem5(
+            (int)swDocumentTypes_e.swDocASSEMBLY,
+            add_in_id_,
+            "Export as URDF@&Tools",
+            -1,
+            "AssemblyURDFExporter",
+            "",
+            "Export assembly as URDF file",
+            images
+        );
+        if (ret < 0)
+        {
+            logger.Error("Failure to add menu item 'Export as URDF' to menu 'Tools'");
+            return;
+        }
+        logger.Info("Adding Assembly export to file menu");
+        ret = SwApp.AddMenuItem5(
+            (int)swDocumentTypes_e.swDocPART,
+            add_in_id_,
+            "Export as URDF@&Tools",
+            -1,
+            "PartURDFExporter",
+            "",
+            "Export part as URDF file",
+            images
+        );
+        if (ret < 0)
+        {
+            logger.Error("Failure to add menu item 'Export as URDF' to menu 'Tools'");
+            return;
         }
 
-        #endregion SolidWorks Registration
+        logger.Info("Adding Part export to file menu");
+    }
 
-        #region ISwAddin Implementation
+    public int ToolbarEnableMethod()
+    {
+        return 1;
+    }
 
-        public SwAddin()
+    public void RemoveCommandMgr()
+    {
+        SwApp.RemoveMenu((int)swDocumentTypes_e.swDocASSEMBLY, "Export as URDF@&File", "");
+        logger.Info("Removing assembly export from file menu");
+        SwApp.RemoveMenu((int)swDocumentTypes_e.swDocPART, "Export as URDF@&File", "");
+        logger.Info("Removing part export from file menu");
+    }
+
+    #endregion UI Methods
+
+    #region UI Callbacks
+
+    public void SetupAssemblyExporter()
+    {
+        ModelDoc2 modeldoc = (ModelDoc2)SwApp.ActiveDoc;
+        logger.Info("Assembly export called for file " + modeldoc.GetTitle());
+        bool saveAndRebuild = false;
+        if (modeldoc.GetSaveFlag())
         {
-            Logger.Setup();
+            saveAndRebuild = true;
+            logger.Info("Save is required");
         }
-
-        private void ExceptionHandler(object sender, ThreadExceptionEventArgs e)
+        else if (
+            modeldoc.Extension.NeedsRebuild2
+            != (int)swModelRebuildStatus_e.swModelRebuildStatus_FullyRebuilt
+        )
         {
-            logger.Warn("Exception encountered in Assembly export form", e.Exception);
+            saveAndRebuild = true;
+            logger.Info("A rebuild is required");
         }
-
-        private void UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        if (
+            saveAndRebuild
+            || MessageBox.Show(
+                "The SW to URDF exporter requires saving and/or rebuilding before continuing",
+                "Save and rebuild document?",
+                MessageBoxButtons.YesNo
+            ) == DialogResult.Yes
+        )
         {
-            logger.Error("Unhandled exception in Assembly Export form\nEmail your maintainer " +
-                "with the log file found at " +
-                Logger.GetFileName(), (Exception)e.ExceptionObject);
+            int options =
+                (int)swSaveAsOptions_e.swSaveAsOptions_SaveReferenced
+                | (int)swSaveAsOptions_e.swSaveAsOptions_Silent;
+            logger.Info("Saving assembly");
+            modeldoc.Save3(options, 0, 0);
+
+            logger.Info("Opening property manager");
+            SetupPropertyManager();
         }
+    }
 
-        public bool ConnectToSW(object ThisSW, int cookie)
+    public void AssemblyURDFExporter()
+    {
+        try
         {
-            logger.Info("Attempting to connect to SW");
-            SwApp = (ISldWorks)ThisSW;
-            add_in_id_ = cookie;
-
-            //Setup callbacks
-            logger.Info("Setting up callbacks");
-            SwApp.SetAddinCallbackInfo(0, this, add_in_id_);
-
-            #region Setup the Command Manager
-            logger.Info("Setting up command manager");
-            CmdMgr = SwApp.GetCommandManager(cookie);
-
-            logger.Info("Adding command manager");
-            AddCommandMgr();
-
-            #endregion Setup the Command Manager
-
-            #region Setup the Event Handlers
-            logger.Info("Adding event handlers");
-            SwEventPtr = (SldWorks)SwApp;
-            OpenDocs = new Hashtable();
-            AttachEventHandlers();
-
-            #endregion Setup the Event Handlers
-
-            logger.Info("Connecting plugin to SolidWorks");
-            return true;
+            SetupAssemblyExporter();
         }
-
-        public bool DisconnectFromSW()
+        catch (Exception e)
         {
-            RemoveCommandMgr();
-            DetachEventHandlers();
-
-            Marshal.ReleaseComObject(CmdMgr);
-            CmdMgr = null;
-            Marshal.ReleaseComObject(SwApp);
-            SwApp = null;
-            //The addin _must_ call GC.Collect() here in order to retrieve all managed code pointers
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-
-            logger.Info("Disconnecting plugin from SolidWorks");
-            return true;
+            logger.Error("An exception was caught when trying to setup the assembly exporter", e);
+            MessageBox.Show(
+                "There was a problem setting up the property manager: \n\""
+                    + e.Message
+                    + "\"\nEmail your maintainer with the log file found at "
+                    + Logger.GetFileName()
+            );
         }
+    }
 
-        #endregion ISwAddin Implementation
+    public void SetupPropertyManager()
+    {
+        ExportPropertyManager pm = new ExportPropertyManager((SldWorks)SwApp);
+        logger.Info("Loading config tree");
+        bool success = pm.LoadConfigTree();
 
-        #region UI Methods
-
-        public void AddCommandMgr()
+        if (success)
         {
-            // Do not use AddMenuItem5 here despite the obselete warning, AddMenuItem5 doesn't work
-            string[] images = {
-                "C:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\URDFExporter\\images\\ros_logo_20x20.png",
-                "C:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\URDFExporter\\images\\ros_logo_32x32.png",
-                "C:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\URDFExporter\\images\\ros_logo_40x40.png",
-                "C:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\URDFExporter\\images\\ros_logo_64x64.png",
-                "C:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\URDFExporter\\images\\ros_logo_96x96.png",
-                "C:\\Program Files\\SOLIDWORKS Corp\\SOLIDWORKS\\URDFExporter\\images\\ros_logo_128x128.png",
-            };
-            int ret = SwApp.AddMenuItem5((int)swDocumentTypes_e.swDocASSEMBLY, add_in_id_, "Export as URDF@&Tools",
-                -1, "AssemblyURDFExporter", "", "Export assembly as URDF file", images);
-            if (ret < 0)
-            {
-                logger.Error("Failure to add menu item 'Export as URDF' to menu 'Tools'");
-                return;
-            }
-            logger.Info("Adding Assembly export to file menu");
-            ret = SwApp.AddMenuItem5((int)swDocumentTypes_e.swDocPART, add_in_id_, "Export as URDF@&Tools",
-                -1, "PartURDFExporter", "", "Export part as URDF file", images);
-            if (ret < 0)
-            {
-                logger.Error("Failure to add menu item 'Export as URDF' to menu 'Tools'");
-                return;
-            }
-
-            logger.Info("Adding Part export to file menu");
+            logger.Info("Showing property manager");
+            pm.Show();
         }
+    }
 
-        public int ToolbarEnableMethod()
-        {
-            return 1;
-        }
-        public void RemoveCommandMgr()
-        {
-            SwApp.RemoveMenu((int)swDocumentTypes_e.swDocASSEMBLY, "Export as URDF@&File", "");
-            logger.Info("Removing assembly export from file menu");
-            SwApp.RemoveMenu((int)swDocumentTypes_e.swDocPART, "Export as URDF@&File", "");
-            logger.Info("Removing part export from file menu");
-        }
-
-        #endregion UI Methods
-
-        #region UI Callbacks
-
-        public void SetupAssemblyExporter()
-        {
-            ModelDoc2 modeldoc = (ModelDoc2)SwApp.ActiveDoc;
-            logger.Info("Assembly export called for file " + modeldoc.GetTitle());
-            bool saveAndRebuild = false;
-            if (modeldoc.GetSaveFlag())
-            {
-                saveAndRebuild = true;
-                logger.Info("Save is required");
-            }
-            else if (modeldoc.Extension.NeedsRebuild2 !=
-                (int)swModelRebuildStatus_e.swModelRebuildStatus_FullyRebuilt)
-            {
-                saveAndRebuild = true;
-                logger.Info("A rebuild is required");
-            }
-            if (saveAndRebuild ||
-                MessageBox.Show("The SW to URDF exporter requires saving and/or rebuilding before continuing",
-                "Save and rebuild document?", MessageBoxButtons.YesNo) == DialogResult.Yes)
-            {
-                int options = (int)swSaveAsOptions_e.swSaveAsOptions_SaveReferenced |
-                        (int)swSaveAsOptions_e.swSaveAsOptions_Silent;
-                logger.Info("Saving assembly");
-                modeldoc.Save3(options, 0, 0);
-
-                logger.Info("Opening property manager");
-                SetupPropertyManager();
-            }
-        }
-
-        public void AssemblyURDFExporter()
-        {
-            try
-            {
-                SetupAssemblyExporter();
-            }
-            catch (Exception e)
-            {
-                logger.Error("An exception was caught when trying to setup the assembly exporter", e);
-                MessageBox.Show("There was a problem setting up the property manager: \n\"" +
-                    e.Message + "\"\nEmail your maintainer with the log file found at " +
-                    Logger.GetFileName());
-            }
-        }
-
-        public void SetupPropertyManager()
-        {
-            ExportPropertyManager pm = new ExportPropertyManager((SldWorks)SwApp);
-            logger.Info("Loading config tree");
-            bool success = pm.LoadConfigTree();
-
-            if (success)
-            {
-                logger.Info("Showing property manager");
-                pm.Show();
-            }
-        }
-
-        public void SetupPartExporter()
-        {
-            logger.Info("Part export called");
-            ModelDoc2 modeldoc = (ModelDoc2)SwApp.ActiveDoc;
-            if ((modeldoc.Extension.NeedsRebuild2 == 0) ||
-                MessageBox.Show("Save and rebuild document?",
+    public void SetupPartExporter()
+    {
+        logger.Info("Part export called");
+        ModelDoc2 modeldoc = (ModelDoc2)SwApp.ActiveDoc;
+        if (
+            (modeldoc.Extension.NeedsRebuild2 == 0)
+            || MessageBox.Show(
+                "Save and rebuild document?",
                 "The SW to URDF exporter requires saving before continuing",
-                MessageBoxButtons.YesNo) == DialogResult.Yes)
+                MessageBoxButtons.YesNo
+            ) == DialogResult.Yes
+        )
+        {
+            if (modeldoc.Extension.NeedsRebuild2 != 0)
             {
-                if (modeldoc.Extension.NeedsRebuild2 != 0)
-                {
-                    int options = (int)swSaveAsOptions_e.swSaveAsOptions_SaveReferenced |
-                        (int)swSaveAsOptions_e.swSaveAsOptions_Silent;
-                    logger.Info("Saving part");
-                    modeldoc.Save3(options, 0, 0);
-                }
-
-                PartExportForm exportForm = new PartExportForm((SldWorks)SwApp);
-                logger.Info("Showing part");
-                exportForm.Show();
-                exportForm.Dispose();
+                int options =
+                    (int)swSaveAsOptions_e.swSaveAsOptions_SaveReferenced
+                    | (int)swSaveAsOptions_e.swSaveAsOptions_Silent;
+                logger.Info("Saving part");
+                modeldoc.Save3(options, 0, 0);
             }
+
+            PartExportForm exportForm = new PartExportForm((SldWorks)SwApp);
+            logger.Info("Showing part");
+            exportForm.Show();
         }
+    }
 
-        public void PartURDFExporter()
+    public void PartURDFExporter()
+    {
+        try
         {
-            try
-            {
-                SetupPartExporter();
-            }
-            catch (Exception e)
-            {
-                logger.Error("Excoption caught setting up export form", e);
-                MessageBox.Show("An exception occured setting up the export form, please email " +
-                    " your maintainer with the log file found at " + Logger.GetFileName());
-            }
+            SetupPartExporter();
         }
-
-        public void FlyoutCallback()
+        catch (Exception e)
         {
-            FlyoutGroup flyGroup = CmdMgr.GetFlyoutGroup(flyoutGroupID);
-            flyGroup.RemoveAllCommandItems();
-
-            flyGroup.AddCommandItem(
-                DateTime.Now.ToLongTimeString(), "test", 0, "FlyoutCommandItem1", "FlyoutEnableCommandItem1");
+            logger.Error("Excoption caught setting up export form", e);
+            MessageBox.Show(
+                "An exception occured setting up the export form, please email "
+                    + " your maintainer with the log file found at "
+                    + Logger.GetFileName()
+            );
         }
+    }
 
-        public int FlyoutEnable()
+    public void FlyoutCallback()
+    {
+        FlyoutGroup flyGroup = CmdMgr.GetFlyoutGroup(flyoutGroupID);
+        flyGroup.RemoveAllCommandItems();
+
+        flyGroup.AddCommandItem(
+            DateTime.Now.ToLongTimeString(),
+            "test",
+            0,
+            "FlyoutCommandItem1",
+            "FlyoutEnableCommandItem1"
+        );
+    }
+
+    public int FlyoutEnable()
+    {
+        return 1;
+    }
+
+    public void FlyoutCommandItem1()
+    {
+        SwApp.SendMsgToUser("Flyout command 1");
+    }
+
+    public int FlyoutEnableCommandItem1()
+    {
+        return 1;
+    }
+
+    #endregion UI Callbacks
+
+    #region Event Methods
+
+    public bool AttachEventHandlers()
+    {
+        AttachSwEvents();
+        //Listen for events on all currently open docs
+        AttachEventsToAllDocuments();
+        return true;
+    }
+
+    private bool AttachSwEvents()
+    {
+        try
         {
-            return 1;
-        }
-
-        public void FlyoutCommandItem1()
-        {
-            SwApp.SendMsgToUser("Flyout command 1");
-        }
-
-        public int FlyoutEnableCommandItem1()
-        {
-            return 1;
-        }
-
-        #endregion UI Callbacks
-
-        #region Event Methods
-
-        public bool AttachEventHandlers()
-        {
-            AttachSwEvents();
-            //Listen for events on all currently open docs
-            AttachEventsToAllDocuments();
+            SwEventPtr.ActiveDocChangeNotify +=
+                new DSldWorksEvents_ActiveDocChangeNotifyEventHandler(OnDocChange);
+            SwEventPtr.DocumentLoadNotify2 += new DSldWorksEvents_DocumentLoadNotify2EventHandler(
+                OnDocLoad
+            );
+            SwEventPtr.FileNewNotify2 += new DSldWorksEvents_FileNewNotify2EventHandler(OnFileNew);
+            SwEventPtr.ActiveModelDocChangeNotify +=
+                new DSldWorksEvents_ActiveModelDocChangeNotifyEventHandler(OnModelChange);
+            SwEventPtr.FileOpenPostNotify += new DSldWorksEvents_FileOpenPostNotifyEventHandler(
+                FileOpenPostNotify
+            );
             return true;
         }
-
-        private bool AttachSwEvents()
+        catch (Exception e)
         {
-            try
-            {
-                SwEventPtr.ActiveDocChangeNotify +=
-                    new DSldWorksEvents_ActiveDocChangeNotifyEventHandler(OnDocChange);
-                SwEventPtr.DocumentLoadNotify2 +=
-                    new DSldWorksEvents_DocumentLoadNotify2EventHandler(OnDocLoad);
-                SwEventPtr.FileNewNotify2 +=
-                    new DSldWorksEvents_FileNewNotify2EventHandler(OnFileNew);
-                SwEventPtr.ActiveModelDocChangeNotify +=
-                    new DSldWorksEvents_ActiveModelDocChangeNotifyEventHandler(OnModelChange);
-                SwEventPtr.FileOpenPostNotify +=
-                    new DSldWorksEvents_FileOpenPostNotifyEventHandler(FileOpenPostNotify);
-                return true;
-            }
-            catch (Exception e)
-            {
-                logger.Error("Attaching SW events failed", e);
-                return false;
-            }
+            logger.Error("Attaching SW events failed", e);
+            return false;
         }
+    }
 
-        private bool DetachSwEvents()
+    private bool DetachSwEvents()
+    {
+        try
         {
-            try
-            {
-                SwEventPtr.ActiveDocChangeNotify -=
-                    new DSldWorksEvents_ActiveDocChangeNotifyEventHandler(OnDocChange);
-                SwEventPtr.DocumentLoadNotify2 -=
-                    new DSldWorksEvents_DocumentLoadNotify2EventHandler(OnDocLoad);
-                SwEventPtr.FileNewNotify2 -=
-                    new DSldWorksEvents_FileNewNotify2EventHandler(OnFileNew);
-                SwEventPtr.ActiveModelDocChangeNotify -=
-                    new DSldWorksEvents_ActiveModelDocChangeNotifyEventHandler(OnModelChange);
-                SwEventPtr.FileOpenPostNotify -=
-                    new DSldWorksEvents_FileOpenPostNotifyEventHandler(FileOpenPostNotify);
-                return true;
-            }
-            catch (Exception e)
-            {
-                logger.Error("Attaching SW events failed", e);
-                return false;
-            }
+            SwEventPtr.ActiveDocChangeNotify -=
+                new DSldWorksEvents_ActiveDocChangeNotifyEventHandler(OnDocChange);
+            SwEventPtr.DocumentLoadNotify2 -= new DSldWorksEvents_DocumentLoadNotify2EventHandler(
+                OnDocLoad
+            );
+            SwEventPtr.FileNewNotify2 -= new DSldWorksEvents_FileNewNotify2EventHandler(OnFileNew);
+            SwEventPtr.ActiveModelDocChangeNotify -=
+                new DSldWorksEvents_ActiveModelDocChangeNotifyEventHandler(OnModelChange);
+            SwEventPtr.FileOpenPostNotify -= new DSldWorksEvents_FileOpenPostNotifyEventHandler(
+                FileOpenPostNotify
+            );
+            return true;
         }
-
-        public void AttachEventsToAllDocuments()
+        catch (Exception e)
         {
-            ModelDoc2 modDoc = (ModelDoc2)SwApp.GetFirstDocument();
-            while (modDoc != null)
-            {
-                if (!OpenDocs.Contains(modDoc))
-                {
-                    AttachModelDocEventHandler(modDoc);
-                }
-                else if (OpenDocs.Contains(modDoc))
-                {
-                    DocumentEventHandler docHandler = (DocumentEventHandler)OpenDocs[modDoc];
-                    if (docHandler != null)
-                    {
-                        bool connected = docHandler.ConnectModelViews();
-                        if (!connected)
-                        {
-                            logger.Warn("Failed to connect to model views");
-                        }
-                    }
-                }
-
-                modDoc = (ModelDoc2)modDoc.GetNext();
-            }
+            logger.Error("Attaching SW events failed", e);
+            return false;
         }
+    }
 
-        public bool AttachModelDocEventHandler(ModelDoc2 modDoc)
+    public void AttachEventsToAllDocuments()
+    {
+        ModelDoc2 modDoc = (ModelDoc2)SwApp.GetFirstDocument();
+        while (modDoc != null)
         {
-            if (modDoc == null)
-            {
-                return false;
-            }
-
             if (!OpenDocs.Contains(modDoc))
             {
-                DocumentEventHandler docHandler;
-                switch (modDoc.GetType())
-                {
-                    case (int)swDocumentTypes_e.swDocPART:
-                        {
-                            docHandler = new PartEventHandler(modDoc, this);
-                            break;
-                        }
-                    case (int)swDocumentTypes_e.swDocASSEMBLY:
-                        {
-                            docHandler = new AssemblyEventHandler(modDoc, this);
-                            break;
-                        }
-                    case (int)swDocumentTypes_e.swDocDRAWING:
-                        {
-                            docHandler = new DrawingEventHandler(modDoc, this);
-                            break;
-                        }
-                    default:
-                        {
-                            return false; //Unsupported document type
-                        }
-                }
-                docHandler.AttachEventHandlers();
-                OpenDocs.Add(modDoc, docHandler);
+                AttachModelDocEventHandler(modDoc);
             }
-            return true;
-        }
-
-        public bool DetachModelEventHandler(ModelDoc2 modDoc)
-        {
-            OpenDocs.Remove(modDoc);
-            return true;
-        }
-
-        public bool DetachEventHandlers()
-        {
-            DetachSwEvents();
-
-            //Close events on all currently open docs
-            DocumentEventHandler docHandler;
-            int numKeys = OpenDocs.Count;
-            object[] keys = new Object[numKeys];
-
-            //Remove all document event handlers
-            OpenDocs.Keys.CopyTo(keys, 0);
-            foreach (ModelDoc2 key in keys)
+            else if (OpenDocs.Contains(modDoc))
             {
-                docHandler = (DocumentEventHandler)OpenDocs[key];
-                docHandler.DetachEventHandlers(); //This also removes the pair from the hash
-                docHandler = null;
+                DocumentEventHandler docHandler = (DocumentEventHandler)OpenDocs[modDoc];
+                if (docHandler != null)
+                {
+                    bool connected = docHandler.ConnectModelViews();
+                    if (!connected)
+                    {
+                        logger.Warn("Failed to connect to model views");
+                    }
+                }
             }
-            return true;
+
+            modDoc = (ModelDoc2)modDoc.GetNext();
         }
-
-        #endregion Event Methods
-
-        #region Event Handlers
-
-        //Events
-        public int OnDocChange()
-        {
-            return 0;
-        }
-
-        public int OnDocLoad(string docTitle, string docPath)
-        {
-            return 0;
-        }
-
-        private int FileOpenPostNotify(string FileName)
-        {
-            AttachEventsToAllDocuments();
-            return 0;
-        }
-
-        public int OnFileNew(object newDoc, int docType, string templateName)
-        {
-            AttachEventsToAllDocuments();
-            return 0;
-        }
-
-        public int OnModelChange()
-        {
-            return 0;
-        }
-
-        #endregion Event Handlers
     }
+
+    public bool AttachModelDocEventHandler(ModelDoc2 modDoc)
+    {
+        if (modDoc == null)
+        {
+            return false;
+        }
+
+        if (!OpenDocs.Contains(modDoc))
+        {
+            DocumentEventHandler docHandler;
+            switch (modDoc.GetType())
+            {
+                case (int)swDocumentTypes_e.swDocPART:
+                {
+                    docHandler = new PartEventHandler(modDoc, this);
+                    break;
+                }
+                case (int)swDocumentTypes_e.swDocASSEMBLY:
+                {
+                    docHandler = new AssemblyEventHandler(modDoc, this);
+                    break;
+                }
+                case (int)swDocumentTypes_e.swDocDRAWING:
+                {
+                    docHandler = new DrawingEventHandler(modDoc, this);
+                    break;
+                }
+                default:
+                {
+                    return false; //Unsupported document type
+                }
+            }
+            docHandler.AttachEventHandlers();
+            OpenDocs.Add(modDoc, docHandler);
+        }
+        return true;
+    }
+
+    public bool DetachModelEventHandler(ModelDoc2 modDoc)
+    {
+        OpenDocs.Remove(modDoc);
+        return true;
+    }
+
+    public bool DetachEventHandlers()
+    {
+        DetachSwEvents();
+
+        //Close events on all currently open docs
+        DocumentEventHandler docHandler;
+        int numKeys = OpenDocs.Count;
+        object[] keys = new Object[numKeys];
+
+        //Remove all document event handlers
+        OpenDocs.Keys.CopyTo(keys, 0);
+        foreach (ModelDoc2 key in keys)
+        {
+            docHandler = (DocumentEventHandler)OpenDocs[key];
+            docHandler.DetachEventHandlers(); //This also removes the pair from the hash
+            docHandler = null;
+        }
+        return true;
+    }
+
+    #endregion Event Methods
+
+    #region Event Handlers
+
+    //Events
+    public int OnDocChange()
+    {
+        return 0;
+    }
+
+    public int OnDocLoad(string docTitle, string docPath)
+    {
+        return 0;
+    }
+
+    private int FileOpenPostNotify(string FileName)
+    {
+        AttachEventsToAllDocuments();
+        return 0;
+    }
+
+    public int OnFileNew(object newDoc, int docType, string templateName)
+    {
+        AttachEventsToAllDocuments();
+        return 0;
+    }
+
+    public int OnModelChange()
+    {
+        return 0;
+    }
+
+    #endregion Event Handlers
 }

@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using Microsoft.Deployment.WindowsInstaller;
 using WixSharp;
-using File = WixSharp.File;
 
 namespace Installer;
 
