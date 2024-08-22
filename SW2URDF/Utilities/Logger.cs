@@ -78,7 +78,7 @@ public static class Logger
         return LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
     }
 
-    public static string GetFileName()
+    public static string? GetFileName()
     {
         RollingFileAppender rootAppender = LogManager
             .GetRepository()
