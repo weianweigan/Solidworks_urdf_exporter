@@ -57,7 +57,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="SolidWorksTools">
-      <HintPath>..\packages\solidworkstools.dll</HintPath>
+      <HintPath>..\resources\solidworkstools.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
