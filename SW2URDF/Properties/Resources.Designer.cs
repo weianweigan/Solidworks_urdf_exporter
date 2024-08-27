@@ -163,5 +163,14 @@ namespace SW2URDF.Properties {
                 return ResourceManager.GetString("ReferenceCoord", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 Save location 的本地化字符串。
+        /// </summary>
+        internal static string SaveLocation {
+            get {
+                return ResourceManager.GetString("SaveLocation", resourceCulture);
+            }
+        }
     }
 }

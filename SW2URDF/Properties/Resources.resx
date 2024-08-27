@@ -151,4 +151,7 @@
   <data name="ReferenceCoord" xml:space="preserve">
     <value>Coordinate System</value>
   </data>
+  <data name="SaveLocation" xml:space="preserve">
+    <value>Save location</value>
+  </data>
 </root>

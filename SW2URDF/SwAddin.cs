@@ -1,6 +1,7 @@
 ﻿using System;
+using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Threading;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swconst;
 using SW2URDF.Properties;
@@ -23,6 +24,7 @@ public sealed class SwAddin : SwAddInEx
 
     public override void OnConnect()
     {
+        AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
         CommandManager.AddCommandGroup<Commands>().CommandClick += SwAddin_CommandClick;
     }
 
@@ -163,5 +165,18 @@ public sealed class SwAddin : SwAddInEx
             logger.Info("Showing part");
             exportForm.Show();
         }
+    }
+
+    private Assembly? CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args)
+    {
+        AssemblyName assemblyName = new AssemblyName(args.Name);
+
+        var dir = Path.GetDirectoryName(typeof(SwAddin).Assembly.Location);
+        var dllLocation = Path.Combine(dir, assemblyName.Name + ".dll");
+
+        if (File.Exists(dllLocation))
+            return Assembly.LoadFrom(dllLocation);
+
+        return null;
     }
 }

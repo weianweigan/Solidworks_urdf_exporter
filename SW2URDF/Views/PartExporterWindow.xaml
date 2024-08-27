@@ -1,0 +1,296 @@
+﻿<Window
+    x:Class="SW2URDF.Views.PartExporterWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:colorPicker="clr-namespace:ColorPickerLib.Controls;assembly=ColorPickerLib"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:SW2URDF.Views"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:props="clr-namespace:SW2URDF.Properties"
+    Title="PartExporterWindow"
+    Width="500"
+    Height="600"
+    MinWidth="400"
+    Background="#F7F7F7"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <ResourceDictionary Source="/SW2URDF;component/Themes/Generic.xaml" />
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="50" />
+        </Grid.RowDefinitions>
+        <StackPanel>
+            <Expander Header="{x:Static props:Resources.SaveLocation}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="75" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox />
+                    <Button
+                        Grid.Column="1"
+                        Width="60"
+                        Content="..." />
+                </Grid>
+            </Expander>
+            <Expander Header="Options">
+                <CheckBox Margin="0,5" Content="Rotate golbal origin to make Z-Axis vertical" />
+            </Expander>
+            <Expander Header="Inertial">
+                <Grid>
+                    <Grid.Resources>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Margin" Value="2" />
+                            <Setter Property="HorizontalAlignment" Value="Right" />
+                        </Style>
+                        <Style TargetType="TextBox">
+                            <Setter Property="Margin" Value="2" />
+                            <Setter Property="MinWidth" Value="30" />
+                        </Style>
+                    </Grid.Resources>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="19*" />
+                        <RowDefinition Height="21*" />
+                        <RowDefinition Height="21.24" />
+                        <RowDefinition Height="21*" />
+                        <RowDefinition Height="0*" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        Grid.ColumnSpan="4"
+                        HorizontalAlignment="Left"
+                        Text="Origin(m):" />
+                    <TextBlock
+                        Grid.Column="5"
+                        Grid.ColumnSpan="4"
+                        HorizontalAlignment="Left"
+                        Text="Moment of inertial(kg * m^-2):" />
+
+                    <TextBlock Grid.Row="1" Text="x:" />
+                    <TextBlock Grid.Row="2" Text="y:" />
+                    <TextBlock Grid.Row="3" Text="z:" />
+                    <TextBlock
+                        Grid.Row="1"
+                        Grid.Column="2"
+                        Text="Roll:" />
+                    <TextBlock
+                        Grid.Row="2"
+                        Grid.Column="2"
+                        Text="Pitch:" />
+                    <TextBlock
+                        Grid.Row="3"
+                        Grid.Column="2"
+                        Text="Yaw:" />
+
+                    <TextBlock
+                        Grid.Row="1"
+                        Grid.Column="4"
+                        Text="ixx:" />
+                    <TextBlock
+                        Grid.Row="1"
+                        Grid.Column="6"
+                        Text="ixy:" />
+                    <TextBlock
+                        Grid.Row="2"
+                        Grid.Column="6"
+                        Text="iyy:" />
+                    <TextBlock
+                        Grid.Row="1"
+                        Grid.Column="8"
+                        Text="ixz:" />
+                    <TextBlock
+                        Grid.Row="2"
+                        Grid.Column="8"
+                        Text="iyz:" />
+                    <TextBlock
+                        Grid.Row="3"
+                        Grid.Column="8"
+                        Text="izz:" />
+
+                    <TextBox Grid.Row="1" Grid.Column="1" />
+                    <TextBox Grid.Row="2" Grid.Column="1" />
+                    <TextBox Grid.Row="3" Grid.Column="1" />
+                    <TextBox Grid.Row="1" Grid.Column="3" />
+                    <TextBox Grid.Row="2" Grid.Column="3" />
+                    <TextBox Grid.Row="3" Grid.Column="3" />
+
+                    <TextBox Grid.Row="1" Grid.Column="5" />
+                    <TextBox Grid.Row="1" Grid.Column="7" />
+                    <TextBox Grid.Row="2" Grid.Column="7" />
+                    <TextBox Grid.Row="1" Grid.Column="9" />
+                    <TextBox Grid.Row="2" Grid.Column="9" />
+                    <TextBox Grid.Row="3" Grid.Column="9" />
+                </Grid>
+            </Expander>
+            <Expander Header="Visual">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Grid>
+                        <Grid.Resources>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Margin" Value="2" />
+                                <Setter Property="HorizontalAlignment" Value="Right" />
+                            </Style>
+                            <Style TargetType="TextBox">
+                                <Setter Property="Margin" Value="2" />
+                                <Setter Property="MinWidth" Value="30" />
+                            </Style>
+                        </Grid.Resources>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Grid.ColumnSpan="4"
+                            HorizontalAlignment="Left"
+                            Text="Origin(m):" />
+
+                        <TextBlock Grid.Row="1" Text="x:" />
+                        <TextBlock Grid.Row="2" Text="y:" />
+                        <TextBlock Grid.Row="3" Text="z:" />
+                        <TextBlock
+                            Grid.Row="1"
+                            Grid.Column="2"
+                            Text="Roll:" />
+                        <TextBlock
+                            Grid.Row="2"
+                            Grid.Column="2"
+                            Text="Pitch:" />
+                        <TextBlock
+                            Grid.Row="3"
+                            Grid.Column="2"
+                            Text="Yaw:" />
+
+                        <TextBox Grid.Row="1" Grid.Column="1" />
+                        <TextBox Grid.Row="2" Grid.Column="1" />
+                        <TextBox Grid.Row="3" Grid.Column="1" />
+                        <TextBox Grid.Row="1" Grid.Column="3" />
+                        <TextBox Grid.Row="2" Grid.Column="3" />
+                        <TextBox Grid.Row="3" Grid.Column="3" />
+                    </Grid>
+                    <StackPanel Grid.Column="1">
+                        <Label Content="Visual Mesh Detail:" />
+                        <UniformGrid Margin="5,0,0,0" Columns="2">
+                            <RadioButton Content="Course" />
+                            <RadioButton Margin="5,0" Content="Fine" />
+                        </UniformGrid>
+                        <Label Content="Custom color:" />
+                        <colorPicker:ColorPicker />
+                    </StackPanel>
+                </Grid>
+            </Expander>
+            <Expander Header="Collision">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Grid>
+                        <Grid.Resources>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Margin" Value="2" />
+                                <Setter Property="HorizontalAlignment" Value="Right" />
+                            </Style>
+                            <Style TargetType="TextBox">
+                                <Setter Property="Margin" Value="2" />
+                                <Setter Property="MinWidth" Value="30" />
+                            </Style>
+                        </Grid.Resources>
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Grid.ColumnSpan="4"
+                            HorizontalAlignment="Left"
+                            Text="Origin(m):" />
+
+                        <TextBlock Grid.Row="1" Text="x:" />
+                        <TextBlock Grid.Row="2" Text="y:" />
+                        <TextBlock Grid.Row="3" Text="z:" />
+                        <TextBlock
+                            Grid.Row="1"
+                            Grid.Column="2"
+                            Text="Roll:" />
+                        <TextBlock
+                            Grid.Row="2"
+                            Grid.Column="2"
+                            Text="Pitch:" />
+                        <TextBlock
+                            Grid.Row="3"
+                            Grid.Column="2"
+                            Text="Yaw:" />
+
+                        <TextBox Grid.Row="1" Grid.Column="1" />
+                        <TextBox Grid.Row="2" Grid.Column="1" />
+                        <TextBox Grid.Row="3" Grid.Column="1" />
+                        <TextBox Grid.Row="1" Grid.Column="3" />
+                        <TextBox Grid.Row="2" Grid.Column="3" />
+                        <TextBox Grid.Row="3" Grid.Column="3" />
+                    </Grid>
+                    <StackPanel Grid.Column="1">
+                        <Label Content="Visual Mesh Detail:" />
+                        <UniformGrid Margin="5,0,0,0" Columns="2">
+                            <RadioButton Content="Course" />
+                            <RadioButton Margin="5,0" Content="Fine" />
+                        </UniformGrid>
+                    </StackPanel>
+                </Grid>
+            </Expander>
+        </StackPanel>
+        <Grid Grid.Row="1">
+            <Button
+                Width="75"
+                Height="30"
+                Margin="0,0,120,0"
+                HorizontalAlignment="Right"
+                Command="{Binding OkCommand}"
+                CommandParameter="{Binding ElementName=_window}"
+                Content="确定(_O)" />
+            <Button
+                Width="75"
+                Height="30"
+                Margin="0,0,15,0"
+                HorizontalAlignment="Right"
+                Command="{Binding CancelCommand}"
+                CommandParameter="{Binding ElementName=_window}"
+                Content="取消(_C)" />
+        </Grid>
+    </Grid>
+</Window>
