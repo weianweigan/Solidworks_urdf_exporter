@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swconst;
 using SW2URDF.Properties;
@@ -37,6 +38,12 @@ public sealed class SwAddin : SwAddInEx
                 case Commands.AssemblyExporter:
                     AssemblyExporter(Application.Sw);
                     break;
+                case Commands.Axis:
+                    RunAxisCommand();
+                    break;
+                case Commands.Coord:
+                    RunCoordCommand();
+                    break;
                 default:
                     throw new NotSupportedException($"Not support command: {spec}");
             }
@@ -45,6 +52,37 @@ public sealed class SwAddin : SwAddInEx
         {
             logger.Error($"{spec} error: {0}", ex);
             Application.ShowMessageBox(ex.Message, MessageBoxIcon_e.Error);
+        }
+    }
+
+    private void RunCoordCommand()
+    {
+        // swCommands_CoordinateSystem 154; valid for parts with a selected sketch; Features toolbar > Reference Geometry > Coordinate System
+        RunCommand(154, Resources.ReferenceCoord);
+    }
+
+    private void RunAxisCommand()
+    {
+        // swCommands_Axis 22; valid for parts; Reference Geometry toolbar > Axis or Features toolbar > Reference Geometry > Axis
+        RunCommand(22, Resources.ReferenceAxis);
+    }
+
+    private void RunCommand(int id, string title)
+    {
+        var doc = Application.Sw.IActiveDoc2;
+        if (doc == null)
+        {
+            return;
+        }
+
+        swDocumentTypes_e docType = (swDocumentTypes_e)doc.GetType();
+        if (docType is swDocumentTypes_e.swDocPART or swDocumentTypes_e.swDocASSEMBLY)
+        {
+            doc.Extension.RunCommand(id, title);
+        }
+        else
+        {
+            throw new NotSupportedException($"Not support document type: {docType}");
         }
     }
 

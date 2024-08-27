@@ -50,6 +50,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="UI\Resources\" />
+    <Folder Include="ViewModels\" />
+    <Folder Include="Views\" />
   </ItemGroup>
 </Project>

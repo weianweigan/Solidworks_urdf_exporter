@@ -11,12 +11,12 @@ public enum Commands
 {
     [Title(typeof(Resources), nameof(Resources.ReferenceAxis))]
     [Icon(typeof(Resources), nameof(Resources.axis))]
-    [CommandItemInfo(true, true, WorkspaceTypes_e.Part, true)]
+    [CommandItemInfo(true, true, WorkspaceTypes_e.Part | WorkspaceTypes_e.Assembly, true)]
     Axis,
 
     [Title(typeof(Resources), nameof(Resources.ReferenceCoord))]
     [Icon(typeof(Resources), nameof(Resources.coord))]
-    [CommandItemInfo(true, true, WorkspaceTypes_e.All, true)]
+    [CommandItemInfo(true, true, WorkspaceTypes_e.Part | WorkspaceTypes_e.Assembly, true)]
     Coord,
 
     [CommandSpacer]
