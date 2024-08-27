@@ -10,10 +10,11 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{25EA017B-A870-495B-B51E-8013E9E3FDFA}"
 	ProjectSection(SolutionItems) = preProject
 		Directory.Build.props = Directory.Build.props
+		README.md = README.md
 		Version.props = Version.props
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Installer", "Installer\Installer.csproj", "{336A334D-6840-4858-A2BB-0CFE25CAD773}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Installer", "Installer\Installer.csproj", "{336A334D-6840-4858-A2BB-0CFE25CAD773}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

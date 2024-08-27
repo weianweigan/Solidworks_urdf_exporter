@@ -53,7 +53,7 @@ public class SerialNode
     public LinkNode BuildLinkNodeFromSerialNode()
     {
         logger.Info("Deserializing node " + linkName);
-        LinkNode node = new LinkNode();
+        LinkNode node = new();
         node.Link.Name = linkName;
         node.Link.Joint.Name = jointName;
         node.Link.Joint.AxisName = axisName;

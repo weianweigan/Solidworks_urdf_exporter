@@ -6,41 +6,6 @@
     <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="UI\Resources\Images\ToolbarLarge.bmp" />
-    <EmbeddedResource Include="UI\Resources\Images\ToolbarSmall.bmp" />
-    <EmbeddedResource Include="UI\Resources\Images\MainIconLarge.bmp" />
-    <EmbeddedResource Include="UI\Resources\Images\MainIconSmall.bmp" />
-    <EmbeddedResource Include="UI\Resources\Images\AddinIcon.bmp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="images\ros_logo_128x128.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="images\ros_logo_16x16.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="images\ros_logo_20x20.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="images\ros_logo_32x32.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="images\ros_logo_40x40.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="images\ros_logo_64x64.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="images\ros_logo_96x96.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="SW2URDF.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Castle.Core" Version="5.1.1" />
     <PackageReference Include="CsvHelper" Version="33.0.1" />
     <PackageReference Include="log4net" Version="3.0.0-preview.2" />
@@ -61,6 +26,19 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
     <None Update="Install.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -70,5 +48,9 @@
     <None Update="UnInstall.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="ViewModels\" />
+    <Folder Include="Views\" />
   </ItemGroup>
 </Project>
